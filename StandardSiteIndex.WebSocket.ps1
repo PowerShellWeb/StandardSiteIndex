@@ -19,50 +19,18 @@ $TimeOut = [TimeSpan]::FromMinutes(7),
 $Root = $PSScriptRoot
 )
 
-$jetstreamUrl = @(
-    "$jetstreamUrl"
-    '?'
-    @(
-        foreach ($collection in $Collections) {            
-            "wantedCollections=$([Uri]::EscapeDataString($collection))"
-        }
-        foreach ($did in $Dids) {
-            "wantedDids=$([Uri]::EscapeDataString($did))"
-        }
-        "cursor=$([DateTimeOffset]::Now.Add(-$Since).ToUnixTimeMilliseconds())" 
-    ) -join '&'
-) -join ''
-
-$Jetstream = WebSocket -SocketUrl $jetstreamUrl -Query @{
-    wantedCollections = $collections
-    cursor = ([DateTimeOffset]::Now - $since).ToUnixTimeMilliseconds()
-} -TimeOut $TimeOut
-
-filter toAtUri {
+#region Declare Filters
+filter getAt {
     $in = $_
-    $did = $in.did
-    $rkey = $in.commit.rkey
-    $recordType = $in.commit.record.'$type'
-    "at://$did/$recordType/$rkey"
-}
+    if ($in -notmatch '^at://') { return }
+    $null, $did, $type, $rkey = $in -split '/{1,2}' -ne ''
 
-filter toLocalPath {        
-    $did = $in.did
-    $rkey = $in.commit.rkey
-    $recordType = $in.commit.record.'$type'
-    if (-not $did) { return }
-    if (-not $rkey) { return }
-    if (-not $recordType) { return }
-    "$(@($recordType -split '\.' -ne'')[-1])/$($did -replace ':', '_')/$rkey.json"
-}
-
-filter getRecord {
-    param($did, $type, $rkey)
     if (
         (-not $did) -or 
         (-not $type) -or 
         (-not $rkey)
     ) {return}
+
     $xrpcUrl = "https://bsky.social/xrpc/com.atproto.repo.getRecord?repo=$(
         $did
     )&collection=$(
@@ -75,10 +43,39 @@ filter getRecord {
         $script:atRecordCache = @{}
     }
     if (-not $script:atRecordCache[$xrpcUrl]) {
-        $script:atRecordCache[$xrpcUrl] = Invoke-RestMethod -Uri $xrpcUrl
+        $script:atRecordCache[$xrpcUrl] = try {
+            Invoke-RestMethod -Uri $xrpcUrl -ErrorAction Ignore
+        } catch {
+            Write-Warning "$_"
+            $_
+        }
     }
     $script:atRecordCache[$xrpcUrl]
 }
+
+filter toAtUri {
+    $in = $_
+    $did = $in.did
+    $rkey = $in.commit.rkey
+    $recordType = $in.commit.record.'$type'
+    "at://$did/$recordType/$rkey"
+}
+
+filter toLocalPath {
+    if ($in.uri -match '^at://') {
+        $null, $did, $recordType, $rkey = $in.uri -split '/{1,2}'
+    } else {
+        $did = $in.did
+        $rkey = $in.commit.rkey
+        $recordType = $in.commit.record.'$type'
+    }       
+    
+    if (-not $did) { return }
+    if (-not $rkey) { return }
+    if (-not $recordType) { return }
+    "$(@($recordType -split '\.' -ne'')[-1])/$($did -replace ':', '_')/$rkey.json"
+}
+
 
 filter updateDocumentIndex {
     $in = $_ 
@@ -116,24 +113,35 @@ filter updatePublicationIndex {
     $inFilePath = Join-Path $root $localPath
     # We want to keep an index of the data, not the whole thing.    
     
-    $index = [Ordered]@{
-        name = $in.commit.record.name
-        atUri = $in | toAtUri
-        description = $in.commit.record.description
-        url = $in.commit.record.url        
+    if ($in.commit.record.name) {
+        $index = [Ordered]@{
+            name = $in.commit.record.name
+            atUri = $in | toAtUri
+            description = $in.commit.record.description
+            url = $in.commit.record.url        
+        }     
+    } else {
+        $index = [Ordered]@{
+            name = $in.value.name
+            atUri = $in.uri
+            description = $in.value.description
+            url = $in.value.url
+        }
     }
 
-    if ($in.commit.record.preferences.showInDiscover -eq $false) {
+    if (
+        $in.commit.record.preferences.showInDiscover -eq $false -or
+        $in.value.preferences.showInDiscover -eq $false
+    ) {
         $index.optout = $true
     }
        
     if (-not (Test-Path $inFilePath)) {                    
-        New-Item -Path $inFilePath -Force -Value (ConvertTo-Json -InputObject $index)
+        New-Item -Path $inFilePath -Force -Value (ConvertTo-Json -InputObject $index -Compress)
     } else {
         Get-Item -Path $inFilePath
     }    
 }
-
 
 filter standardSiteRecord {
     $message = $_
@@ -146,6 +154,60 @@ filter standardSiteRecord {
         }
     }
 }
+#endregion Declare Filters
+
+$jetstreamUrl = @(
+    "$jetstreamUrl"
+    '?'
+    @(
+        foreach ($collection in $Collections) {            
+            "wantedCollections=$([Uri]::EscapeDataString($collection))"
+        }
+        foreach ($did in $Dids) {
+            "wantedDids=$([Uri]::EscapeDataString($did))"
+        }
+        "cursor=$([DateTimeOffset]::Now.Add(-$Since).ToUnixTimeMilliseconds())" 
+    ) -join '&'
+) -join ''
+
+
+$siteUris = 
+    Get-ChildItem ./document/ -recurse -file | 
+    Get-Content -Raw | 
+    ConvertFrom-Json |
+    Select-Object -ExpandProperty site -Unique
+
+$pubUris = 
+    Get-ChildItem ./publication/ -recurse -file | 
+    Get-Content -Raw | 
+    ConvertFrom-Json |
+    Select-Object -ExpandProperty atUri -Unique
+
+$missingPublications = 
+    @($siteUris |
+        Where-Object {
+            $_ -match '^at://' -and
+            $_ -notin $pubUris
+        })
+
+if ($missingPublications.Count) {
+    Write-Host "Backfilling $($missingPublications.Length) publications" -ForegroundColor Cyan
+
+    $backfilled = $missingPublications | getAt
+
+    $backfilled |
+        Where-Object { $_ -isnot [Management.Automation.ErrorRecord]} | 
+        updatePublicationIndex |
+        Add-Member NoteProperty CommitMessage "Syncing from at protocol [skip ci]" -Force -PassThru
+}
+
+$Jetstream = WebSocket -SocketUrl $jetstreamUrl -Query @{
+    wantedCollections = $collections
+    cursor = ([DateTimeOffset]::Now - $since).ToUnixTimeMilliseconds()
+} -TimeOut $TimeOut
+
+
+
 
 Write-Host "Listening To Jetstream: $jetstreamUrl" -ForegroundColor Cyan
 Write-Host "Starting loop @ $([DateTime]::Now)" -ForegroundColor Cyan
@@ -174,6 +236,3 @@ $Jetstream |
     Receive-Job -ErrorAction Ignore | 
     standardSiteRecord |
     Add-Member NoteProperty CommitMessage "Syncing from at protocol [skip ci]" -Force -PassThru
-
-
-
