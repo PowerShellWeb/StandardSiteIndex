@@ -5,7 +5,7 @@ on:
     - cron: '11 */7 * * *'
   workflow_dispatch: 
 jobs: 
-  SyncMrPowerShell: 
+  index: 
     runs-on: ubuntu-latest
     steps: 
       - name: Check out repository
