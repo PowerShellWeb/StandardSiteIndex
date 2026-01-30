@@ -113,7 +113,8 @@ foreach ($year in $organized.Output.Keys) {
         $monthPath = Join-Path -Path $yearPath $(
             "{0:d2}" -f ($month -as [int])
         )
-        $monthIndex = @()        
+        $monthIndex = @()
+        Write-Host -ForegroundColor Cyan "Month: $month"
         foreach ($day in $organized.Output[$year][$month].Keys) {
             if (-not $day) { continue }
             $dayPath = Join-Path $monthPath $(
@@ -121,7 +122,7 @@ foreach ($year in $organized.Output.Keys) {
             )
             
             $dayIndex = $organized.Output[$year][$month][$day] |
-                Select-Object $site.AtData.tables['site.standard.index'].Columns.ColumnName
+                Select-Object $global:site.AtData.tables['site.standard.index'].Columns.ColumnName
             
             $monthIndex += $dayIndex
             
