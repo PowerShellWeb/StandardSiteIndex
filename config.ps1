@@ -97,7 +97,7 @@ if (-not $global:site.AtData.Tables) {
 $organized = $global:site.AtData.tables['site.standard.index'].Select('
     PublishedAt IS NOT NULL','PublishedAt DESC'
 ) | 
-    organize PublishedAt.Year/Month/Day
+    organize 'PublishedAt.Year/Month/Day'
 
 $indexHtmlTemplate = (Get-Command ./index.html.ps1 -CommandType ExternalScript).ScriptBlock
 
@@ -110,6 +110,7 @@ foreach ($year in $organized.Output.Keys) {
         )
         $monthIndex = @()        
         foreach ($day in $organized.Output[$year][$month].Keys) {
+            if (-not $day) { continue }
             $dayPath = Join-Path $monthPath $(
                 "{0:d2}" -f ($day -as [int])
             )
