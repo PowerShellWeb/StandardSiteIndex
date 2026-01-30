@@ -94,14 +94,19 @@ if (-not $global:site.AtData.Tables) {
 }
 #endregion Populate At Protocol Data
 
+Write-Host -ForegroundColor Cyan "Organizing index of $($global:site.AtData.tables['site.standard.index'].Rows.Count) rows"
+
 $organized = $global:site.AtData.tables['site.standard.index'].Select('
     PublishedAt IS NOT NULL','PublishedAt DESC'
 ) | 
     organize 'PublishedAt.Year/Month/Day'
 
+Write-Host -ForegroundColor Cyan "Organized index into $($organized.Output.Count) buckets"
+
 $indexHtmlTemplate = (Get-Command ./index.html.ps1 -CommandType ExternalScript).ScriptBlock
 
 foreach ($year in $organized.Output.Keys) {
+    Write-Host -ForegroundColor Cyan "Year: $year"
     $yearPath = Join-Path -Path $PSScriptRoot $year
     $yearIndex = @()
     foreach ($month in $organized.Output[$year].Keys) {

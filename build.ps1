@@ -31,6 +31,8 @@ $Layout = $(
 $excludeTerms = @("Color-Schemes", ".tests.ps1", ".turtle.ps1", ".websocket.ps1")
 )
 
+$PSStyle.OutputRendering = 'ANSI'
+
 #region Common Filters
 filter Require {
     # What do we require?    
