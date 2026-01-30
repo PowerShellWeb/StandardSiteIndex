@@ -48,7 +48,8 @@ filter Require {
     # If they're not installed
     if (-not $isInstalled) {
         # install them.
-        Install-Module -AllowClobber -Force -Name $require -Scope CurrentUser
+        Write-Host -ForegroundColor Cyan "Installing $require"
+        Install-Module -AllowClobber -Force -Name $require -Scope CurrentUser        
         $isInstalled = Import-Module -Name $require @importSplat
     }
 }
@@ -174,7 +175,7 @@ $configPs1Path = Join-Path $site.PSScriptRoot config.ps1
 if (Test-Path $configPs1Path) { 
     $configPs1 = Get-command $configPs1Path -CommandType ExternalScript
     if ($configPs1.ScriptBlock.Ast.ScriptRequirements) {
-        $configPs1 | Require
+        $configPs1.ScriptBlock.Ast.ScriptRequirements.RequiredModules | Require
     }
     . $configPs1Path
 }
