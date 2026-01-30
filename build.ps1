@@ -175,7 +175,7 @@ $configPs1Path = Join-Path $site.PSScriptRoot config.ps1
 if (Test-Path $configPs1Path) { 
     $configPs1 = Get-command $configPs1Path -CommandType ExternalScript
     if ($configPs1.ScriptBlock.Ast.ScriptRequirements) {
-        $configPs1.ScriptBlock.Ast.ScriptRequirements.RequiredModules | Require
+        $configPs1.ScriptBlock.Ast.ScriptRequirements.RequiredModules.Name | Require
     }
     . $configPs1Path
 }
