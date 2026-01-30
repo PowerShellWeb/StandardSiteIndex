@@ -5,7 +5,7 @@ if (-not $global:site) {
 }
 
 #region Populate At Protocol Data
-if (-not $global:site.AtData) {
+if (-not $global:site.AtData.Tables) {
     $global:site.AtData = [Data.DataSet]::new()
     $ssd = $global:site.AtData.Tables.Add("site.standard.document")
     $ssd.Columns.AddRange(@(
@@ -94,7 +94,7 @@ if (-not $global:site.AtData) {
 }
 #endregion Populate At Protocol Data
 
-$organized = $site.AtData.tables['site.standard.index'].Select('
+$organized = $global:site.AtData.tables['site.standard.index'].Select('
     PublishedAt IS NOT NULL','PublishedAt DESC'
 ) | 
     organize PublishedAt.Year/Month/Day
