@@ -27,12 +27,7 @@ $digitsInPath = @($PSScriptRoot -split '[\\/]' -match '^\d+$' -as [int[]])
 $year, $month, $day = $digitsInPath
 
 # Make the title include the year/month/day
-$title = @(
-    "Standard Site Index"
-    if ($year) {
-        $year, $month, $day -ne $null -join '-'
-    }
-) -join ' '
+$title = "Standard Site Index"
 
 if ($page -is [Collections.IDictionary]) {
     $page.title = $title    
@@ -62,6 +57,7 @@ if ($digitSubdirectories) {
     "</ul>"
 }
 
+$time = ''
 if ($year -and $month -and $day) {
     $time = "{0:d4}-{1:d2}-{2:d2}" -f $year, $month, $day
     "<h3><time datetime='$time'>$time</time></h3>"
@@ -73,7 +69,16 @@ if ($year -and $month -and $day) {
     "<h3><time datetime='$time'>$time</time></h3>"
 }
 
-$description = "Standard Site Index for $time"
+if ($time) {
+    $description = "$time"
+} else {
+    $description = "Index"
+}
+
+if ($page -is [Collections.IDictionary]) {
+    $page.ddescription = $description
+}
+
 
 if (-not $digitsInPath -or -not $indexOfPosts) {    
     return
