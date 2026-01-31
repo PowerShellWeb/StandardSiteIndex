@@ -75,9 +75,9 @@ if ($year -and $month -and $day) {
 }
 
 if ($time) {
-    $description = "$time"
+    $description = "Standard Site Index for $Time"
 } else {
-    $description = "Index"
+    $description = "Standard Site Index"
 }
 
 if ($page -is [Collections.IDictionary]) {
