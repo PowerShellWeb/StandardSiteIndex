@@ -176,8 +176,8 @@ $excludePattern = @(
 $configPs1Path = Join-Path $site.PSScriptRoot config.ps1
 if (Test-Path $configPs1Path) { 
     $configPs1 = Get-command $configPs1Path -CommandType ExternalScript
-    if ($configPs1.ScriptBlock.Ast.ScriptRequirements) {
-        $configPs1.ScriptBlock.Ast.ScriptRequirements.RequiredModules.Name | Require
+    if ($configPs1) {
+        $configPs1 | Require
     }
     . $configPs1Path
 }
@@ -223,8 +223,7 @@ while ($fileQueue.Count) {
             $scriptFile =
                 $invokeCommand.Getcommand($buildFile.FullName, 'ExternalScript')
             $page = $scriptFile | GetScriptMetadata
-            $parameters = $scriptFile | GetScriptParameters $site $page
-            $layoutParameters = $layout | GetScriptParameters $site $page
+            $parameters = $scriptFile | GetScriptParameters $site $page            
             Write-Progress @buildProgress
             # Make sure to `dot` the script, so we run in the current context.
             $output = . $buildFile.FullName @parameters
@@ -232,6 +231,9 @@ while ($fileQueue.Count) {
             if (-not $output) {
                 Pop-Location; continue nextFile
             }
+
+            # Get the layout parameters after we run, so any changes propagate.
+            $layoutParameters = $layout | GetScriptParameters $site $page
             
             $outputPath = 
             if ($buildFile.Name -replace '(?:\.html)?\.ps1$' -eq 
