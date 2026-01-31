@@ -32,7 +32,7 @@ $title = @(
     if ($year) {
         "($($year, $month, $day -ne $null -join '-'))"
     }
-)
+) -join ' '
 
 if ($page -is [Collections.IDictionary]) {
     $page.title = $title    
