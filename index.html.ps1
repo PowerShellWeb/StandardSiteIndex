@@ -27,7 +27,12 @@ $digitsInPath = @($PSScriptRoot -split '[\\/]' -match '^\d+$' -as [int[]])
 $year, $month, $day = $digitsInPath
 
 # Make the title include the year/month/day
-$title = "Standard Site Index"
+$title = @(
+    "Standard Site Index"
+    if ($year) {
+        "($($year, $month, $day -ne $null -join '-'))"
+    }
+)
 
 if ($page -is [Collections.IDictionary]) {
     $page.title = $title    
@@ -76,7 +81,7 @@ if ($time) {
 }
 
 if ($page -is [Collections.IDictionary]) {
-    $page.ddescription = $description
+    $page.description = $description
 }
 
 
