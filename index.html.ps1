@@ -1,35 +1,66 @@
-$indexOfPosts = Get-ChildItem -Path $PSScriptRoot -Filter index.json |
+<#
+.SYNOPSIS
+    index.html.ps1
+.DESCRIPTION
+    index.html.ps1 generates index.html
+#>
+param()
+
+#region Initialization
+
+# First, let's get our local index of posts, if one exists.
+$indexFile = Get-ChildItem -Path $PSScriptRoot -Filter index.json 
+$indexOfPosts = $indexFile |
     Get-Content -Raw | 
     ConvertFrom-Json 
 
+# Next find any subdirectories whose names are entirely digits
+# (this lets us treat root, years, months, and days the same)
 $digitSubdirectories = Get-ChildItem -Path $PSScriptRoot -Directory |
-        Where-Object Name -match '\d+'    
+    Where-Object Name -match '^\d+$'    
 
-$title = "Standard Site Index"
+# Make sure year/month/day are null
+$year, $month, $day = $null, $null, $null
+# Then figure out how many digits are in the current path
+$digitsInPath = @($PSScriptRoot -split '[\\/]' -match '^\d+$' -as [int[]])
+# Assign year/month/day 
+$year, $month, $day = $digitsInPath
+
+# Make the title include the year/month/day
+$title = @(
+    "Standard Site Index"
+    if ($year) {
+        $year, $month, $day -ne $null -join '-'
+    }
+) -join ' '
+
 if ($page -is [Collections.IDictionary]) {
     $page.title = $title    
 }
 
+#endregion Initialization
+
+#region Content
+
+# Declare any styles
 $style = @"
 h1, h2, h3 { text-align: center }
 "@
 
+# and emit a style tag.
 "<style>
 $style
 </style>"
 
-$digitsInPath = @($PSScriptRoot -split '[\\/]' -match '^\d+$' -as [int[]])
-if (-not $digitsInPath -or -not $indexOfPosts) {
+
+# If there were digit subdirectories, put them in a bullet point list.
+if ($digitSubdirectories) {
     "<ul>"
     foreach ($digitSubdirectory in $digitSubdirectories) {
         "<li><a href='$($digitSubdirectory.Name)'>$($digitSubdirectory.Name)</a></li>"
     }
     "</ul>"
-    return
 }
-
-$year, $month, $day = $digitsInPath
-
 
 if ($year -and $month -and $day) {
     $time = "{0:d4}-{1:d2}-{2:d2}" -f $year, $month, $day
@@ -44,7 +75,9 @@ if ($year -and $month -and $day) {
 
 $description = "Standard Site Index for $time"
 
-
+if (-not $digitsInPath -or -not $indexOfPosts) {    
+    return
+}
 
 $postsByDomain = $indexOfPosts | Group-Object { ($_.url -as [uri]).DnsSafeHost }
 
