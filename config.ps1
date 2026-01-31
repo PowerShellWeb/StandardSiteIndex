@@ -4,6 +4,9 @@ if (-not $global:site) {
     $global:site = [Ordered]@{}
 }
 
+$site = $global:site
+# Add Google analytics id.
+$site.AnalyticsID = 'G-YJ8BNN14KL'
 #region Populate At Protocol Data
 if (-not $global:site.AtData.Tables) {
     $global:site.AtData = [Data.DataSet]::new()
