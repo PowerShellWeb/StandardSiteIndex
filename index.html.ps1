@@ -52,8 +52,16 @@ h1, h2, h3 { text-align: center }
 $style
 </style>"
 
+
+#region Index Tree
+
+# Basic tree navigation
+
 "<ul>"
-if ($indexFile) {
+
+# If we are in a year/month/day directory
+if ($year) {
+    # there is a parent directory to link to.
     "<li><a href='..'>^</a></li>"
 }
 
@@ -68,6 +76,8 @@ if ($digitSubdirectories) {
     }
 }
 "</ul>"
+#endregion Index Tree
+
 
 $time = ''
 if ($year -and $month -and $day) {
