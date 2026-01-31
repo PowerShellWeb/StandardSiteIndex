@@ -52,15 +52,22 @@ h1, h2, h3 { text-align: center }
 $style
 </style>"
 
+"<ul>"
+if ($indexFile) {
+    "<li><a href='..'>^</a></li>"
+}
 
 # If there were digit subdirectories, put them in a bullet point list.
 if ($digitSubdirectories) {
-    "<ul>"
     foreach ($digitSubdirectory in $digitSubdirectories) {
-        "<li><a href='$($digitSubdirectory.Name)'>$($digitSubdirectory.Name)</a></li>"
+        $digitIndexSize = 
+            @(Get-ChildItem -LiteralPath $digitSubdirectory.FullName -Filter index.json |
+            Get-Content -Raw | 
+            ConvertFrom-Json).Count        
+        "<li><a href='$($digitSubdirectory.Name)'>$($digitSubdirectory.Name) ($digitIndexSize)</a></li>"
     }
-    "</ul>"
 }
+"</ul>"
 
 $time = ''
 if ($year -and $month -and $day) {
