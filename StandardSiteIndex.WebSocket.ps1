@@ -1,20 +1,44 @@
 #requires -Module WebSocket
-param(
-[uri]
-$jetstreamUrl = "wss://jetstream$(1,2 | Get-Random).us-west.bsky.network/subscribe",
+<#
+.SYNOPSIS
+    Standard Site Indexer
+.DESCRIPTION
+    Standard Site Indexer.
 
+    Uses the [WebSocket](https://github.com/PowerShellWeb/WebSocket) module to 
+    index new `site.standard.document` and `site.standard.publication` records.
+.NOTES
+    This is a fairly standard script.  
+    
+    Feel free to copy it and reuse this convention elsewhere.
+
+    The WebSocket module is a really good simple way to build an at protocol indexer.
+#>
+param(
+# The jetstream url
+[uri]
+$jetstreamUrl = 
+    "wss://jetstream$(1,2 | Get-Random).us-west.bsky.network/subscribe",
+
+# The collections we are interested in.
 [string[]]
 $Collections = @("site.standard.document","site.standard.publication"),
 
+# Any specific dids we want to watch.
 [string[]]
 $Dids = @(),
 
+# The time back we want to ask for.
+# (Generally only two days are available)
 [TimeSpan]
-$Since = [TimeSpan]::FromHours(48),
+$Since = [TimeSpan]::FromHours(24),
 
+# The timeout.
+# This is how long the job should run.
 [TimeSpan]
 $TimeOut = [TimeSpan]::FromMinutes(7),
 
+# The root used to store content.
 [string]
 $Root = $PSScriptRoot
 )
@@ -156,6 +180,7 @@ filter standardSiteRecord {
 }
 #endregion Declare Filters
 
+#region Ride the Jetstream
 $jetstreamUrl = @(
     "$jetstreamUrl"
     '?'
@@ -170,44 +195,10 @@ $jetstreamUrl = @(
     ) -join '&'
 ) -join ''
 
-
-$siteUris = 
-    Get-ChildItem ./document/ -recurse -file | 
-    Get-Content -Raw | 
-    ConvertFrom-Json |
-    Select-Object -ExpandProperty site -Unique
-
-$pubUris = 
-    Get-ChildItem ./publication/ -recurse -file | 
-    Get-Content -Raw | 
-    ConvertFrom-Json |
-    Select-Object -ExpandProperty atUri -Unique
-
-$missingPublications = 
-    @($siteUris |
-        Where-Object {
-            $_ -match '^at://' -and
-            $_ -notin $pubUris
-        })
-
-if ($missingPublications.Count) {
-    Write-Host "Backfilling $($missingPublications.Length) publications" -ForegroundColor Cyan
-
-    $backfilled = $missingPublications | getAt
-
-    $backfilled |
-        Where-Object { $_ -isnot [Management.Automation.ErrorRecord]} | 
-        updatePublicationIndex |
-        Add-Member NoteProperty CommitMessage "Syncing from at protocol [skip ci]" -Force -PassThru
-}
-
 $Jetstream = WebSocket -SocketUrl $jetstreamUrl -Query @{
     wantedCollections = $collections
     cursor = ([DateTimeOffset]::Now - $since).ToUnixTimeMilliseconds()
 } -TimeOut $TimeOut
-
-
-
 
 Write-Host "Listening To Jetstream: $jetstreamUrl" -ForegroundColor Cyan
 Write-Host "Starting loop @ $([DateTime]::Now)" -ForegroundColor Cyan
@@ -236,3 +227,43 @@ $Jetstream |
     Receive-Job -ErrorAction Ignore | 
     standardSiteRecord |
     Add-Member NoteProperty CommitMessage "Syncing from at protocol [skip ci]" -Force -PassThru
+#endregion Ride the Jetstream
+
+#region Backfill Publications
+
+# When we see new articles, we might not yet have their publications
+
+# So find all of the site uris
+$siteUris = 
+    Get-ChildItem ./document/ -recurse -file | 
+    Get-Content -Raw | 
+    ConvertFrom-Json |
+    Select-Object -ExpandProperty site -Unique
+
+# and see which ones we have already cached.
+$pubUris = 
+    Get-ChildItem ./publication/ -recurse -file | 
+    Get-Content -Raw | 
+    ConvertFrom-Json |
+    Select-Object -ExpandProperty atUri -Unique
+
+# Then make a list of which are missing.
+$missingPublications = 
+    @($siteUris |
+        Where-Object {
+            $_ -match '^at://' -and
+            $_ -notin $pubUris
+        })
+
+# If any are missing, backfill the publications
+if ($missingPublications.Count) {
+    Write-Host "Backfilling $($missingPublications.Length) publications" -ForegroundColor Cyan
+
+    $backfilled = $missingPublications | getAt
+
+    $backfilled |
+        Where-Object { $_ -isnot [Management.Automation.ErrorRecord]} | 
+        updatePublicationIndex |
+        Add-Member NoteProperty CommitMessage "Syncing from at protocol [skip ci]" -Force -PassThru
+}
+#endregion Backfill Publications
