@@ -1,0 +1,1 @@
+{"title":"Linux server setup","path":"/linux-server-setup/","site":"https://tommi.space","atUri":"at://did:plc:bzuknxqdaowg6o7xw3zdyi73/site.standard.document/3meyn4xf5rpk2","publishedAt":"2026-02-16T09:28:00Z","tags":"`sudo useradd -m username`;`sudo usermod -aG sudo username`"}
