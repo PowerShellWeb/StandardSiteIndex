@@ -1,0 +1,1 @@
+{"title":"FFI-proof slice::from_raw_parts","path":"/t/ffi-proof-slice-from-raw-parts/23971#post_7","site":"https://internals.rust-lang.org","atUri":"at://did:plc:ivbknywyskln22er3nkssdhl/site.standard.document/3me3z3g2y6fw2","publishedAt":"2026-02-05T01:35:21Z","tags":"CVE-2018-1000810: std: Buffer overflow vulnerability in str::repeat() › RustSec Advisory Database"}

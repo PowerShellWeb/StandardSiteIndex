@@ -1,0 +1,1 @@
+{"title":"[Bug?] Array3D(dtype=\"uint8\") persists as int64 after save_to_disk despite explicit casting","path":"/t/bug-array3d-dtype-uint8-persists-as-int64-after-save-to-disk-despite-explicit-casting/173326#post_1","site":"https://discuss.huggingface.co","atUri":"at://did:plc:pgryn3ephfd2xgft23qokfzt/site.standard.document/3mele2vsdfay2","publishedAt":"2026-02-11T07:20:07Z"}

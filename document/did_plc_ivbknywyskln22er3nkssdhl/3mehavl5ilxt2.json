@@ -1,0 +1,1 @@
+{"title":"FFI-proof slice::from_raw_parts","path":"/t/ffi-proof-slice-from-raw-parts/23971#post_11","site":"https://internals.rust-lang.org","atUri":"at://did:plc:ivbknywyskln22er3nkssdhl/site.standard.document/3mehavl5ilxt2","publishedAt":"2026-02-09T20:05:43Z","tags":"Don't pass NULL to `slice::from_raw_parts()` by sdroege · Pull Request #121 · rust-av/dav1d-rs · GitHub"}

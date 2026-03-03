@@ -1,0 +1,1 @@
+{"title":"Why is `ToOwned` in `alloc`?","path":"/t/why-is-toowned-in-alloc/23999#post_2","site":"https://internals.rust-lang.org","atUri":"at://did:plc:ivbknywyskln22er3nkssdhl/site.standard.document/3mempgdp25ff2","publishedAt":"2026-02-11T22:49:42Z","tags":"github.com/rust-lang/libs-team;ACP: Move `ToOwned` and `Cow` to `core`.;bjoernager"}

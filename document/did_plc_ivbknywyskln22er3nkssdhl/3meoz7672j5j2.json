@@ -1,0 +1,1 @@
+{"title":"Why is `ToOwned` in `alloc`?","path":"/t/why-is-toowned-in-alloc/23999#post_8","site":"https://internals.rust-lang.org","atUri":"at://did:plc:ivbknywyskln22er3nkssdhl/site.standard.document/3meoz7672j5j2","publishedAt":"2026-02-12T22:00:39Z","tags":"wip: Move `ToBorrow` to `core` · cvengler/rust@943fc34 · GitHub"}
